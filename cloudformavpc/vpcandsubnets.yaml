@@ -70,3 +70,13 @@ Resources:
       Tags:
        - Key: Name
          Value: db-2                     
+  db3:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: us-west-2b
+      VpcId:
+        Ref: ntiervpc
+      CidrBlock: 192.168.6.0/24
+      Tags:
+       - Key: Name
+         Value: db-3           
