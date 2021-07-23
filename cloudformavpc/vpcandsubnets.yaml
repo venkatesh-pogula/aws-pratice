@@ -19,16 +19,7 @@ Resources:
       Tags:
        - Key: Name
          Value: web-1
-  app1:
-    Type: AWS::EC2::Subnet
-    Properties:
-      AvailabilityZone: us-west-2b
-      VpcId:
-        Ref: ntiervpc
-      CidrBlock: 192.168.1.0/24
-      Tags:
-       - Key: Name
-         Value: app-1              
+  
   web2:
     Type: AWS::EC2::Subnet
     Properties:
@@ -38,7 +29,18 @@ Resources:
       CidrBlock: 192.168.2.0/24
       Tags:
        - Key: Name
-         Value: web-2    
+         Value: web-2   
+
+  app1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: us-west-2b
+      VpcId:
+        Ref: ntiervpc
+      CidrBlock: 192.168.1.0/24
+      Tags:
+       - Key: Name
+         Value: app-1                      
   
   app2:
     Type: AWS::EC2::Subnet
@@ -70,13 +72,159 @@ Resources:
       Tags:
        - Key: Name
          Value: db-2                     
-  db3:
-    Type: AWS::EC2::Subnet
+  webnacl:
+    Type: AWS::EC2::NetworkAcl
     Properties:
-      AvailabilityZone: us-west-2b
-      VpcId:
-        Ref: ntiervpc
-      CidrBlock: 192.168.6.0/24
-      Tags:
-       - Key: Name
-         Value: db-3           
+       VpcId:
+         Ref: ntiervpc
+       Tags:
+        - Key: Name
+          Value: webnacl 
+  webnaclinboundrule:
+    Type: AWS::EC2::NetworkAclEntry
+    Properties:
+       CidrBlock: 192.168.0.0/16
+       RuleNumber: 100
+       NetworkAclId:
+         Ref: webnacl
+       Protocol: -1
+       RuleAction: allow
+  webnacloutboundrule:
+    Type: AWS::EC2::NetworkAclEntry
+    Properties:
+       CidrBlock: 0.0.0.0/0
+       RuleNumber: 100
+       NetworkAclId:
+         Ref: webnacl
+       Protocol: -1
+       RuleAction: allow 
+       Egress: true 
+  webnaclinboubdruleforhttp:
+    Type: AWS::EC2::NetworkAclEntry
+    Properties:
+       CidrBlock: 0.0.0.0/0
+       PortRange:
+         From: 80
+         To: 80
+       RuleNumber: 102
+       NetworkAclId:
+         Ref: webnacl
+       Protocol: 6
+       RuleAction: allow 
+  web1naclassiocation:
+    Type: AWS::EC2::SubnetNetworkAclAssociation
+    Properties:
+      NetworkAclId:
+        Ref: webnacl
+      SubnetId:
+        Ref: web1
+  web2naclassiocation:
+    Type: AWS::EC2::SubnetNetworkAclAssociation
+    Properties:
+      NetworkAclId:
+        Ref: webnacl
+      SubnetId:
+        Ref: web2
+## first create the web nacl and assign the vpc to webnacl then below steps follows
+## In the above step we complete the web nacl creation,in/out bound assign and subnet associations for web subnets
+## Now lets create the app and web nacls and attached the vpc,create the in/out bound rules creations and associates the subnets
+  appnacl:
+    Type: AWS::EC2::NetworkAcl
+    Properties:
+       VpcId:
+         Ref: ntiervpc
+       Tags:
+        - Key: Name
+          Value: appnacl
+ ## attaching the appnacl to vpc 
+  appnaclinboundrule:
+    Type: AWS::EC2::NetworkAclEntry
+    Properties:
+       CidrBlock: 192.168.0.0/16
+       RuleNumber: 100
+       NetworkAclId:
+         Ref: appnacl
+       Protocol: -1
+       RuleAction: allow   
+ ## creating the in/out bound rule for appnacl      
+  appnacloutboundrule:
+    Type: AWS::EC2::NetworkAclEntry
+    Properties:
+       CidrBlock: 0.0.0.0/0
+       RuleNumber: 100
+       NetworkAclId:
+         Ref: appnacl
+       Protocol: -1
+       RuleAction: allow 
+       Egress: true 
+ ## now assoicate the subnets....to nacl
+  app1naclassiocation:
+    Type: AWS::EC2::SubnetNetworkAclAssociation
+    Properties:
+      NetworkAclId:
+        Ref: appnacl
+      SubnetId:
+        Ref: app1 
+  app2naclassiocation:
+    Type: AWS::EC2::SubnetNetworkAclAssociation
+    Properties:
+      NetworkAclId:
+        Ref: appnacl
+      SubnetId:
+        Ref: app2 
+ ## now create the dbnacl
+  dbnacl:
+    Type: AWS::EC2::NetworkAcl
+    Properties:
+       VpcId:
+         Ref: ntiervpc
+       Tags:
+        - Key: Name
+          Value: appnacl
+ ## attaching the vpc to db nacl and in/bound rule creations also
+  dbnaclinboundrule:
+    Type: AWS::EC2::NetworkAclEntry
+    Properties:
+       CidrBlock: 192.168.0.0/16
+       RuleNumber: 100
+       NetworkAclId:
+         Ref: dbnacl
+       Protocol: -1
+       RuleAction: allow 
+  dbnacloutboundrule:
+    Type: AWS::EC2::NetworkAclEntry
+    Properties:
+       CidrBlock: 0.0.0.0/0
+       RuleNumber: 100
+       NetworkAclId:
+         Ref: dbnacl
+       Protocol: -1
+       RuleAction: allow 
+       Egress: true     
+ ## Now subnets assoications
+  db1naclassiocation:
+    Type: AWS::EC2::SubnetNetworkAclAssociation
+    Properties:
+      NetworkAclId:
+        Ref: dbnacl
+      SubnetId:
+        Ref: db1 
+  db2naclassiocation:
+    Type: AWS::EC2::SubnetNetworkAclAssociation
+    Properties:
+      NetworkAclId:
+        Ref: dbnacl
+      SubnetId:
+        Ref: db2      
+         
+            
+                           
+   
+       
+
+
+
+
+         
+
+         

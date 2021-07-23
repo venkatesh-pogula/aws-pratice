@@ -1,0 +1,324 @@
+{
+    "AWSTemplateFormatVersion": "2010-09-09",
+    "Description": "Creating ntier architecture",
+    "Resources": {
+        "ntiervpc": {
+            "Type": "AWS::EC2::VPC",
+            "Properties": {
+                "CidrBlock": "10.10.0.0/16",
+                "EnableDnsHostnames": true,
+                "Tags": [
+                    {
+                        "Key": "Name",
+                        "Value": "ntier"
+                    }
+                ]
+            }
+        },
+        "web1": {
+            "Type": "AWS::EC2::Subnet",
+            "Properties": {
+                "AvailabilityZone": "us-west-2a",
+                "VpcId": {
+                    "Ref": "ntiervpc"
+                },
+                "CidrBlock": "10.10.0.0/24",
+                "Tags": [
+                    {
+                        "Key": "Name",
+                        "Value": "web-1"
+                    }
+                ]
+            }
+        },
+        "web2": {
+            "Type": "AWS::EC2::Subnet",
+            "Properties": {
+                "AvailabilityZone": "us-west-2a",
+                "VpcId": {
+                    "Ref": "ntiervpc"
+                },
+                "CidrBlock": "10.10.1.0/24",
+                "Tags": [
+                    {
+                        "Key": "Name",
+                        "Value": "web-2"
+                    }
+                ]
+            }
+        },
+        "app1": {
+            "Type": "AWS::EC2::Subnet",
+            "Properties": {
+                "AvailabilityZone": "us-west-2a",
+                "VpcId": {
+                    "Ref": "ntiervpc"
+                },
+                "CidrBlock": "10.10.2.0/24",
+                "Tags": [
+                    {
+                        "Key": "Name",
+                        "Value": "app-1"
+                    }
+                ]
+            }
+        },
+        "app2": {
+            "Type": "AWS::EC2::Subnet",
+            "Properties": {
+                "AvailabilityZone": "us-west-2a",
+                "VpcId": {
+                    "Ref": "ntiervpc"
+                },
+                "CidrBlock": "10.10.3.0/24",
+                "Tags": [
+                    {
+                        "Key": "Name",
+                        "Value": "app-2"
+                    }
+                ]
+            }
+        },
+        "db1": {
+            "Type": "AWS::EC2::Subnet",
+            "Properties": {
+                "AvailabilityZone": "us-west-2a",
+                "VpcId": {
+                    "Ref": "ntiervpc"
+                },
+                "CidrBlock": "10.10.4.0/24",
+                "Tags": [
+                    {
+                        "Key": "Name",
+                        "Value": "db-1"
+                    }
+                ]
+            }
+        },
+        "db2": {
+            "Type": "AWS::EC2::Subnet",
+            "Properties": {
+                "AvailabilityZone": "us-west-2a",
+                "VpcId": {
+                    "Ref": "ntiervpc"
+                },
+                "CidrBlock": "10.10.5.0/24",
+                "Tags": [
+                    {
+                        "Key": "Name",
+                        "Value": "db-2"
+                    }
+                ]
+            }
+        },
+        "webnacl": {
+            "Description": "This is web nacl",
+            "Type": "AWS::EC2::NetworkAcl",
+            "Properties": {
+                "VpcId": {
+                    "Ref": "ntiervpc"
+                },
+                "Tags": [
+                    {
+                        "Key": "Name",
+                        "Value": "webnacl"
+                    }
+                ]
+            }
+        },
+        "webnaclallowinternal": {
+            "Description": "Inbound rule for web nacl",
+            "Type": "AWS::EC2::NetworkAclEntry",
+            "Properties": {
+                "CidrBlock": "10.10.0.0/16",
+                "RuleNumber": 100,
+                "NetworkAclId": {
+                    "Ref": "webnacl"
+                },
+                "Protocol": -1,
+                "RuleAction": "allow"
+            }
+        },
+        "webnaclallexternal": {
+            "Description": "outbound rule for web nacl",
+            "Type": "AWS::EC2::NetworkAclEntry",
+            "Properties": {
+                "CidrBlock": "0.0.0.0/0",
+                "RuleNumber": 100,
+                "NetworkAclId": {
+                    "Ref": "webnacl"
+                },
+                "Protocol": -1,
+                "Egress": true,
+                "RuleAction": "allow"
+            }
+        },
+        "webnaclallinhttp": {
+            "Description": "Inbound rule for web nacl",
+            "Type": "AWS::EC2::NetworkAclEntry",
+            "Properties": {
+                "CidrBlock": "0.0.0.0/0",
+                "PortRange": {
+                    "From": 80,
+                    "To": 80
+                },
+                "RuleNumber": 105,
+                "NetworkAclId": {
+                    "Ref": "webnacl"
+                },
+                "Protocol": 6,
+                "RuleAction": "allow"
+            }
+        },
+        "web1naclassociation": {
+            "Type": "AWS::EC2::SubnetNetworkAclAssociation",
+            "Properties": {
+                "NetworkAclId": {
+                    "Ref": "webnacl"
+                },
+                "SubnetId": {
+                    "Ref": "web1"
+                }
+            }
+        },
+        "web2naclassociation": {
+            "Type": "AWS::EC2::SubnetNetworkAclAssociation",
+            "Properties": {
+                "NetworkAclId": {
+                    "Ref": "webnacl"
+                },
+                "SubnetId": {
+                    "Ref": "web2"
+                }
+            }
+        },
+        "appnacl": {
+            "Description": "appnacl",
+            "Type": "AWS::EC2::NetworkAcl",
+            "Properties": {
+                "VpcId": {
+                    "Ref": "ntiervpc"
+                },
+                "Tags": [
+                    {
+                        "Key": "Name",
+                        "Value": "appnacl"
+                    }
+                ]
+            }
+        },
+        "appnaclallexternal": {
+            "Description": "outbound rule for web nacl",
+            "Type": "AWS::EC2::NetworkAclEntry",
+            "Properties": {
+                "CidrBlock": "0.0.0.0/0",
+                "RuleNumber": 100,
+                "NetworkAclId": {
+                    "Ref": "appnacl"
+                },
+                "Protocol": -1,
+                "Egress": true,
+                "RuleAction": "allow"
+            }
+        },
+        "appnaclallowinternal": {
+            "Description": "Inbound rule for web nacl",
+            "Type": "AWS::EC2::NetworkAclEntry",
+            "Properties": {
+                "CidrBlock": "10.10.0.0/16",
+                "RuleNumber": 100,
+                "NetworkAclId": {
+                    "Ref": "appnacl"
+                },
+                "Protocol": -1,
+                "RuleAction": "allow"
+            }
+        },
+        "app2naclassociation": {
+            "Type": "AWS::EC2::SubnetNetworkAclAssociation",
+            "Properties": {
+                "NetworkAclId": {
+                    "Ref": "appnacl"
+                },
+                "SubnetId": {
+                    "Ref": "app2"
+                }
+            }
+        },
+        "app1naclassociation": {
+            "Type": "AWS::EC2::SubnetNetworkAclAssociation",
+            "Properties": {
+                "NetworkAclId": {
+                    "Ref": "appnacl"
+                },
+                "SubnetId": {
+                    "Ref": "app1"
+                }
+            }
+        },
+        "dbnacl": {
+            "Description": "appnacl",
+            "Type": "AWS::EC2::NetworkAcl",
+            "Properties": {
+                "VpcId": {
+                    "Ref": "ntiervpc"
+                },
+                "Tags": [
+                    {
+                        "Key": "Name",
+                        "Value": "dbnacl"
+                    }
+                ]
+            }
+        },
+        "dbnaclallexternal": {
+            "Description": "outbound rule for web nacl",
+            "Type": "AWS::EC2::NetworkAclEntry",
+            "Properties": {
+                "CidrBlock": "0.0.0.0/0",
+                "RuleNumber": 100,
+                "NetworkAclId": {
+                    "Ref": "dbnacl"
+                },
+                "Protocol": -1,
+                "Egress": true,
+                "RuleAction": "allow"
+            }
+        },
+        "dbnaclallowinternal": {
+            "Description": "Inbound rule for web nacl",
+            "Type": "AWS::EC2::NetworkAclEntry",
+            "Properties": {
+                "CidrBlock": "10.10.0.0/16",
+                "RuleNumber": 100,
+                "NetworkAclId": {
+                    "Ref": "dbnacl"
+                },
+                "Protocol": -1,
+                "RuleAction": "allow"
+            }
+        },
+        "db2naclassociation": {
+            "Type": "AWS::EC2::SubnetNetworkAclAssociation",
+            "Properties": {
+                "NetworkAclId": {
+                    "Ref": "dbnacl"
+                },
+                "SubnetId": {
+                    "Ref": "db2"
+                }
+            }
+        },
+        "db1naclassociation": {
+            "Type": "AWS::EC2::SubnetNetworkAclAssociation",
+            "Properties": {
+                "NetworkAclId": {
+                    "Ref": "dbnacl"
+                },
+                "SubnetId": {
+                    "Ref": "db1"
+                }
+            }
+        }
+    }
+}
