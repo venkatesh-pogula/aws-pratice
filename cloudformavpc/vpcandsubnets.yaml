@@ -1,21 +1,53 @@
 ---
 AWSTemplateFormatVersion: "2010-09-09"
 Description: exploring the cloudformation
+Parameters:
+  vpccidr:
+    Description: this is for vpc cidr 
+    Type: String 
+    Default: 10.10.0.0/16
+  web1az:
+    Description: Az of web1 subnet 
+    Type: AWS::EC2::AvailabilityZone::Name
+  web2az:
+    Description: Az of web2 subnet 
+    Type: AWS::EC2::AvailabilityZone::Name
+  app1az:
+    Description: Az of app1 subnet 
+    Type: AWS::EC2::AvailabilityZone::Name
+  app2az:
+    Description: Az of app2 subnet 
+    Type: AWS::EC2::AvailabilityZone::Name
+  db1az:
+    Description: Az of db1 subnet 
+    Type: AWS::EC2::AvailabilityZone::Name
+  db2az:
+    Description: Az of db2 subnet 
+    Type: AWS::EC2::AvailabilityZone::Name          
+
 Resources: 
   ntiervpc: 
     Type: AWS::EC2::VPC
     Properties:
-      CidrBlock: 192.168.0.0/16
+      CidrBlock:
+        Ref: vpccidr  
       Tags:
         - Key: Name
           Value: ntier
   web1:
     Type: AWS::EC2::Subnet
     Properties:
-      AvailabilityZone: us-west-2b
+      AvailabilityZone:
+        Ref: web1az
       VpcId:
         Ref: ntiervpc
-      CidrBlock: 192.168.0.0/24
+      CidrBlock:
+        Fn::Select: 
+          - 0
+          - Fn::Cidr: 
+            Ref: vpccidr
+          - 6
+          - 8
       Tags:
        - Key: Name
          Value: web-1
@@ -23,10 +55,18 @@ Resources:
   web2:
     Type: AWS::EC2::Subnet
     Properties:
-      AvailabilityZone: us-west-2b
+      AvailabilityZone:
+        Ref: web2az
       VpcId:
         Ref: ntiervpc
-      CidrBlock: 192.168.2.0/24
+      CidrBlock:
+        CidrBlock:
+        Fn::Select: 
+          - 1
+          - Fn::Cidr: 
+            Ref: vpccidr
+          - 6
+          - 8
       Tags:
        - Key: Name
          Value: web-2   
@@ -34,10 +74,18 @@ Resources:
   app1:
     Type: AWS::EC2::Subnet
     Properties:
-      AvailabilityZone: us-west-2b
+      AvailabilityZone: 
+        Ref: app1az
       VpcId:
         Ref: ntiervpc
-      CidrBlock: 192.168.1.0/24
+      CidrBlock:
+        CidrBlock:
+        Fn::Select: 
+          - 2
+          - Fn::Cidr: 
+            Ref: vpccidr
+          - 6
+          - 8
       Tags:
        - Key: Name
          Value: app-1                      
@@ -45,30 +93,54 @@ Resources:
   app2:
     Type: AWS::EC2::Subnet
     Properties:
-      AvailabilityZone: us-west-2b
+      AvailabilityZone:
+        Ref: app2az
       VpcId:
         Ref: ntiervpc
-      CidrBlock: 192.168.3.0/24
+      CidrBlock:
+        CidrBlock:
+        Fn::Select: 
+          - 3
+          - Fn::Cidr: 
+            Ref: vpccidr
+          - 6
+          - 8
       Tags:
        - Key: Name
          Value: app-2    
   db1:
     Type: AWS::EC2::Subnet
     Properties:
-      AvailabilityZone: us-west-2b
+      AvailabilityZone:
+        Ref: db1az
       VpcId:
         Ref: ntiervpc
-      CidrBlock: 192.168.4.0/24
+      CidrBlock:
+        CidrBlock:
+        Fn::Select: 
+          - 4
+          - Fn::Cidr: 
+            Ref: vpccidr
+          - 6
+          - 8  
       Tags:
        - Key: Name
          Value: db-1 
   db2:
     Type: AWS::EC2::Subnet
     Properties:
-      AvailabilityZone: us-west-2b
+      AvailabilityZone:
+        Ref: db2az
       VpcId:
         Ref: ntiervpc
-      CidrBlock: 192.168.5.0/24
+      CidrBlock:
+        CidrBlock:
+        Fn::Select: 
+          - 5
+          - Fn::Cidr: 
+            Ref: vpccidr
+          - 6
+          - 8
       Tags:
        - Key: Name
          Value: db-2                     
@@ -215,8 +287,88 @@ Resources:
       NetworkAclId:
         Ref: dbnacl
       SubnetId:
-        Ref: db2      
-         
+        Ref: db2 
+ ## create the security group as open ssh and http ports
+  SecurityGroupName:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: cloudformation
+      GroupDescription: this is for cloudformation sg
+      VpcId:
+        Ref: ntiervpc 
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp 
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+      SecurityGroupEgress:
+        - IpProtocol: tcp
+          CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: Name 
+          Value: Securitygroupforsshandhttp  
+## To create the open 8080 port and 3306 port for app and db
+Openmysqlport:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: cloudformation
+      GroupDescription: this to open 3306 sg
+      VpcId:
+        Ref: ntiervpc 
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 3306
+          ToPort: 3306
+          CidrIp:
+            Ref: vpccidr
+      Tags:
+        - Key: Name 
+          Value: Mysql          
+## To create the db-subnet by using RDS
+DBSubnetGroup:
+  Type: AWS::RDS::DBSubnetGroup
+  Properties:
+    DBSubnetGroupDescription: this for the db subnets group 
+    SubnetIds:
+      - subnet-id:
+        Ref: db1
+      - subnet-id:
+        Ref: db2   
+  Tags:
+    - Key: Name 
+      Value: dbsecuritygroup          
+## Creation of mysql database 
+  mysqldbinstance:
+    Type: AWS::RDS::DBInstance
+    Properties:
+      AllocatedStorage: 20
+      DBInstanceClass: db.t2.micro
+      AllowMajorVersionUpgrade: false
+      AutoMinorVersionUpgrade: false
+      BackupRetentionPeriod: 0
+      DBInstanceIdentifier: ltmysqlfromcf
+      DBName: cloudformationinstance        
+      DBSubnetGroupName:
+        Ref: DBSubnetGroup  
+      Engine: mysql
+      EngineVersion: 8.0.25 
+      MasterUsername: devopscf
+      MasterUserPassword: devopscfdevopscf
+      MultiAZ: false 
+      Port: 3306
+      PubliclyAccessible: false
+      StorageEncrypted: false
+      StorageType: gp2
+      VPCSecurityGroups:
+        - vpc-sg-id: 
+           Ref: Openmysqlport
+      Tags:
+        - Key: Name
+          Value: mysqldbinstance         
             
                            
    
